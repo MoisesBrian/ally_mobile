@@ -1,13 +1,15 @@
-// ignore_for_file: file_names
+// ignore_for_file: file_names, must_be_immutable
+import 'package:ally_mobile/model/Person.dart';
 import 'package:ally_mobile/widgets/DynamicFontSize.dart';
 import 'package:ally_mobile/widgets/Widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:intl/intl.dart';
+import 'package:shimmer/shimmer.dart';
 
 class VoterDetails extends StatefulWidget {
-  const VoterDetails({super.key});
-
+  VoterDetails({super.key, required this.voterData});
+  Map voterData;
   @override
   State<VoterDetails> createState() => _VoterDetailsState();
 }
@@ -45,6 +47,41 @@ class _VoterDetailsState extends State<VoterDetails> {
   TextEditingController referedByTag = TextEditingController();
   TextEditingController referal = TextEditingController();
   TextEditingController referalTag = TextEditingController();
+  // Future<void> getReferals() async {
+  //   PersonModel personModel = PersonModel();
+  //   var personData = await personModel.getPersonNetwork(
+  //       id: "${widget.voterData['person_id']}");
+  //   // print("PERSON DATA: $personData");
+  //   print("PERSON DATA REFERED TO: ${personData.first['reffered_to']}");
+  //   print("PERSON DATA REFERED BY: ${personData.first['reffered_by']}");
+  // }
+
+  void updateControllers() {
+    firstName.text = widget.voterData['first_name'];
+    middleName.text = widget.voterData['middle_name'];
+    lastName.text = widget.voterData['last_name'];
+    precinctNo.text = widget.voterData['precint_no'];
+    birthDate.text = widget.voterData['birth_date'];
+    contactNo.text = widget.voterData['contact_no'];
+    if (municipalityList.contains("${widget.voterData['municipality']}")) {
+      selectedMunicipality = widget.voterData['municipality'];
+    }
+    if (barangayList.contains("${widget.voterData['barangay']}")) {
+      selectedBarangay = widget.voterData['barangay'];
+    }
+    if (widget.voterData['gender'] != null) {
+      selectedGender = widget.voterData['gender'] == "M" ? "MALE" : "FEMALE";
+    }
+    isSureVoter = widget.voterData['sure_or_paid'] != "paid";
+  }
+
+  @override
+  initState() {
+    super.initState();
+    updateControllers();
+    // getReferals();
+  }
+
   @override
   Widget build(BuildContext context) {
     double width = MediaQuery.of(context).size.width;
@@ -58,6 +95,11 @@ class _VoterDetailsState extends State<VoterDetails> {
         initialWidth: 360,
         initialHeight: 800,
         initialFontSize: 20,
+        context: context);
+    double namesFontSize = DynamicFontSize().calculateFontSize(
+        initialWidth: 360,
+        initialHeight: 800,
+        initialFontSize: 15,
         context: context);
     return SafeArea(
       child: Scaffold(
@@ -176,9 +218,49 @@ class _VoterDetailsState extends State<VoterDetails> {
                 Container(
                   width: width,
                   height: 200,
+                  padding: const EdgeInsets.all(5),
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.blueAccent),
                     borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: SingleChildScrollView(
+                    child: FutureBuilder(
+                      future: PersonModel().getPersonNetwork(
+                          id: "${widget.voterData['person_id']}"),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return loadingSkeleton(width, height);
+                        } else if (snapshot.hasError) {
+                          return Text('Error: ${snapshot.error}');
+                        }
+
+                        return Wrap(
+                          spacing: 5,
+                          runSpacing: 3,
+                          children: [
+                            for (int i = 0;
+                                i < snapshot.data.first['reffered_by'].length;
+                                i++)
+                              Container(
+                                padding: const EdgeInsets.all(5),
+                                // margin: EdgeInsets.all(5),
+                                decoration: BoxDecoration(
+                                  color: Color(int.parse(
+                                      "0x${snapshot.data.first['reffered_by'][i]['tag_id']['color']}")),
+                                  borderRadius: BorderRadius.circular(5),
+                                ),
+                                child: addLabel(
+                                    text:
+                                        "${snapshot.data.first['reffered_by'][i]['reffered_by']['last_name']}, ${snapshot.data.first['reffered_by'][i]['reffered_by']['first_name']} ${snapshot.data.first['reffered_by'][i]['reffered_by']['middle_name']}",
+                                    fontSize: namesFontSize,
+                                    fontWeight: FontWeight.w500,
+                                    fontColor: Colors.white),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 ),
                 addPadding(3),
@@ -263,12 +345,52 @@ class _VoterDetailsState extends State<VoterDetails> {
                   ],
                 ),
                 addPadding(3),
+                //REFERED TO TAGS
                 Container(
                   width: width,
                   height: 200,
+                  padding: const EdgeInsets.all(5),
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.blueAccent),
                     borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: SingleChildScrollView(
+                    child: FutureBuilder(
+                      future: PersonModel().getPersonNetwork(
+                          id: "${widget.voterData['person_id']}"),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return loadingSkeleton(width, height);
+                        } else if (snapshot.hasError) {
+                          return Text('Error: ${snapshot.error}');
+                        }
+                        return Wrap(
+                          spacing: 5,
+                          runSpacing: 3,
+                          children: [
+                            for (int i = 0;
+                                i < snapshot.data.first['reffered_to'].length;
+                                i++)
+                              Container(
+                                padding: const EdgeInsets.all(5),
+                                // margin: EdgeInsets.all(5),
+                                decoration: BoxDecoration(
+                                  color: Color(int.parse(
+                                      "0x${snapshot.data.first['reffered_to'][i]['tag_id']['color']}")),
+                                  borderRadius: BorderRadius.circular(5),
+                                ),
+                                child: addLabel(
+                                    text:
+                                        "${snapshot.data.first['reffered_to'][i]['reffered_to']['last_name']}, ${snapshot.data.first['reffered_to'][i]['reffered_to']['first_name']} ${snapshot.data.first['reffered_to'][i]['reffered_to']['middle_name']}",
+                                    fontSize: namesFontSize,
+                                    fontWeight: FontWeight.w500,
+                                    fontColor: Colors.white),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 ),
                 addPadding(3),
@@ -400,6 +522,29 @@ class _VoterDetailsState extends State<VoterDetails> {
           ),
         ),
       ),
+    );
+  }
+
+  Column loadingSkeleton(double width, double height) {
+    return Column(
+      children: [
+        for (int i = 0; i < 50; i++)
+          Shimmer.fromColors(
+            baseColor: Colors.grey[350]!,
+            highlightColor: Colors.white,
+            child: Container(
+              width: width,
+              height: 30,
+              margin: const EdgeInsets.only(bottom: 10),
+              decoration: const BoxDecoration(
+                color: Colors.grey,
+                borderRadius: BorderRadius.all(
+                  Radius.circular(5),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

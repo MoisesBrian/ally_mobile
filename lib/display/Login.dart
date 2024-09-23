@@ -32,12 +32,11 @@ class _LoginState extends State<Login> {
         try {
           isLoading = true;
           User? user = event.session?.user;
-          String? role = await UserModel().getUserRole(user!).then((value) {
+          await UserModel().getUserRole(user!).then((value) {
             // print("User role: $value");
             Get.off(() => const Home(),
                 transition: Transition.cupertino,
                 duration: const Duration(milliseconds: 250));
-            return value;
           });
           isLoading = false;
           // Login.userRole = role!;
@@ -73,6 +72,7 @@ class _LoginState extends State<Login> {
         isLoading = false;
       });
     } on Exception catch (e) {
+      print("Error: $e");
       setState(() {
         isLoading = false;
       });

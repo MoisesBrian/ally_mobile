@@ -29,15 +29,6 @@ class _HomeState extends State<Home> {
       PersonModel personModel = PersonModel();
       List personData = await personModel.getAllPerson(
           where: filter, city: city, filter: columnNames);
-      print(personData);
-      print(personData.length);
-      // get the reffered by using getPersonUpline function then add it to the personData
-      // for (int i = 0; i < personData.length; i++) {
-      //   List refferedBy =
-      //       await personModel.getPersonUpline(id: personData[i]['person_id']);
-      //   personData[i]['refferedBy'] = refferedBy;
-      // }
-
       for (int x = 0; x < personData.length; x++) {
         if (personData[x]['gender'] == null) {
           personData[x]['gender'] = '-';
@@ -129,13 +120,15 @@ class _HomeState extends State<Home> {
                             } else if (snapshot.hasError) {
                               return Text('Error: ${snapshot.error}');
                             }
-                            print(snapshot.data[0]);
                             return Column(
                               children: [
                                 for (int i = 0; i < snapshot.data.length; i++)
                                   GestureDetector(
                                     onTap: () {
-                                      Get.to(() => const VoterDetails(),
+                                      Get.to(
+                                          () => VoterDetails(
+                                                voterData: snapshot.data[i],
+                                              ),
                                           transition: Transition.cupertino,
                                           duration: const Duration(
                                               milliseconds: 250));
@@ -156,7 +149,8 @@ class _HomeState extends State<Home> {
                                             alignment: Alignment.centerLeft,
                                             child: addLabel(
                                               alignment: TextAlign.left,
-                                              text: "${snapshot.data[i]['last_name']}, ${snapshot.data[i]['first_name']} ${snapshot.data[i]['middle_name']} ",
+                                              text:
+                                                  "${snapshot.data[i]['last_name']}, ${snapshot.data[i]['first_name']} ${snapshot.data[i]['middle_name']} ",
                                               fontSize: 15,
                                               fontWeight: FontWeight.bold,
                                               fontColor: Colors.black,
