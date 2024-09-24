@@ -1,3 +1,5 @@
+// ignore_for_file: file_names
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LogsModel {

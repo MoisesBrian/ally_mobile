@@ -1,11 +1,15 @@
 // ignore_for_file: file_names, must_be_immutable
 import 'package:ally_mobile/model/Person.dart';
+import 'package:ally_mobile/model/Tags.dart';
 import 'package:ally_mobile/widgets/DynamicFontSize.dart';
 import 'package:ally_mobile/widgets/Widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
+import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
+
+import '../model/Logs.dart';
 
 class VoterDetails extends StatefulWidget {
   VoterDetails({super.key, required this.voterData});
@@ -44,9 +48,14 @@ class _VoterDetailsState extends State<VoterDetails> {
   ];
   bool isSureVoter = false;
   TextEditingController referedBy = TextEditingController();
+  String referedById = "";
   TextEditingController referedByTag = TextEditingController();
+  String referedByTagId = "";
   TextEditingController referal = TextEditingController();
+  String referalId = "";
   TextEditingController referalTag = TextEditingController();
+  String referalTagId = "";
+
   // Future<void> getReferals() async {
   //   PersonModel personModel = PersonModel();
   //   var personData = await personModel.getPersonNetwork(
@@ -136,16 +145,22 @@ class _VoterDetailsState extends State<VoterDetails> {
                 TypeAheadField(
                   controller: referedBy,
                   suggestionsCallback: (pattern) async {
-                    List<Map<String, dynamic>> list = [
-                      {"name": "John Doe", "description": "Voter"},
-                      {"name": "Jane Doe", "description": "Voter"},
-                      {"name": "John Smith", "description": "Voter"},
-                      {"name": "Jane Smith", "description": "Voter"},
-                    ];
-                    return list
-                        .where((suggestion) => suggestion["name"]
-                            .toLowerCase()
-                            .contains(pattern.toLowerCase()))
+                    PersonModel personModel = PersonModel();
+                    List personData = await personModel.getAllPerson(
+                        where: pattern.replaceAll(",", ""),
+                        filter: 'person_id, last_name, first_name, middle_name',
+                        limit: 10);
+                    return personData
+                        .where((suggestion) =>
+                            suggestion["last_name"]
+                                .toLowerCase()
+                                .contains(pattern.toLowerCase()) ||
+                            suggestion["first_name"]
+                                .toLowerCase()
+                                .contains(pattern.toLowerCase()) ||
+                            suggestion["middle_name"]
+                                .toLowerCase()
+                                .contains(pattern.toLowerCase()))
                         .toList();
                   },
                   builder: (context, controller, focusNode) {
@@ -158,11 +173,14 @@ class _VoterDetailsState extends State<VoterDetails> {
                   },
                   itemBuilder: (context, voterData) {
                     return ListTile(
-                      title: Text(voterData['name']),
+                      title: Text(
+                          "${voterData['last_name']}, ${voterData['first_name']} ${voterData['middle_name']}"),
                     );
                   },
                   onSelected: (voterData) {
-                    referedBy.text = voterData['name'];
+                    referedBy.text =
+                        "${voterData['last_name']}, ${voterData['first_name']} ${voterData['middle_name']}";
+                    referedById = "${voterData['person_id']}";
                   },
                 ),
                 addPadding(3),
@@ -172,13 +190,8 @@ class _VoterDetailsState extends State<VoterDetails> {
                     TypeAheadField(
                       controller: referedByTag,
                       suggestionsCallback: (pattern) async {
-                        List<Map<String, dynamic>> list = [
-                          {"tag": "Barkada", "id": "Voter"},
-                          {"tag": "Kapatid", "id": "Voter"},
-                          {"tag": "Tito", "id": "Voter"},
-                          {"tag": "Katrabaho", "id": "Voter"},
-                        ];
-                        return list
+                        List tags = await TagsModel().getAllTags();
+                        return tags
                             .where((suggestion) => suggestion["tag"]
                                 .toLowerCase()
                                 .contains(pattern.toLowerCase()))
@@ -192,13 +205,14 @@ class _VoterDetailsState extends State<VoterDetails> {
                             focusNode: focusNode,
                             borderColor: Colors.blueAccent);
                       },
-                      itemBuilder: (context, voterData) {
+                      itemBuilder: (context, tagData) {
                         return ListTile(
-                          title: Text(voterData['tag']),
+                          title: Text(tagData['tag']),
                         );
                       },
-                      onSelected: (voterData) {
-                        referedByTag.text = voterData['tag'];
+                      onSelected: (tagData) {
+                        referedByTag.text = "${tagData['tag']}";
+                        referedByTagId = "${tagData['id']}";
                       },
                     ),
                     addElevatedTextButton(
@@ -209,7 +223,36 @@ class _VoterDetailsState extends State<VoterDetails> {
                       fontWeight: FontWeight.bold,
                       bgColor: Colors.blueAccent,
                       borderRadius: 5,
-                      handleOnPress: () {},
+                      handleOnPress: () async {
+                        if ((referedById != '' && referedBy.text != "") &&
+                            (referedByTagId != '' && referedByTag.text != "")) {
+                          await PersonModel().insertRefferal(
+                              refferalList: [
+                                {'id': referedById, 'tag': referedByTagId}
+                              ],
+                              person_id: widget.voterData['person_id'],
+                              type: "reffered_by").then((value) async {
+                            if (value['status'] == 'success') {
+                              LogsModel model = LogsModel(
+                                logText:
+                                    'Reffered by and reffered to has been added to the person with ID: ${widget.voterData['person_id']}',
+                                logType: 'Refferal',
+                              );
+                              await model.createLog();
+                              referedBy.clear();
+                              referedByTag.clear();
+                              referedById = '';
+                              referedByTagId = '';
+                              Get.snackbar("Success", "Refferal Added");
+                            } else {
+                              Get.snackbar("Error", "Refferal not Added");
+                            }
+                          });
+                        } else {
+                          Get.snackbar(
+                              "Error", "Please select a tag and a person");
+                        }
+                      },
                     ),
                   ],
                 ),
@@ -267,16 +310,22 @@ class _VoterDetailsState extends State<VoterDetails> {
                 TypeAheadField(
                   controller: referal,
                   suggestionsCallback: (pattern) async {
-                    List<Map<String, dynamic>> list = [
-                      {"name": "John Doe", "description": "Voter"},
-                      {"name": "Jane Doe", "description": "Voter"},
-                      {"name": "John Smith", "description": "Voter"},
-                      {"name": "Jane Smith", "description": "Voter"},
-                    ];
-                    return list
-                        .where((suggestion) => suggestion["name"]
-                            .toLowerCase()
-                            .contains(pattern.toLowerCase()))
+                    PersonModel personModel = PersonModel();
+                    List personData = await personModel.getAllPerson(
+                        where: pattern.replaceAll(",", ""),
+                        filter: 'person_id, last_name, first_name, middle_name',
+                        limit: 10);
+                    return personData
+                        .where((suggestion) =>
+                            suggestion["last_name"]
+                                .toLowerCase()
+                                .contains(pattern.toLowerCase()) ||
+                            suggestion["first_name"]
+                                .toLowerCase()
+                                .contains(pattern.toLowerCase()) ||
+                            suggestion["middle_name"]
+                                .toLowerCase()
+                                .contains(pattern.toLowerCase()))
                         .toList();
                   },
                   builder: (context, controller, focusNode) {
@@ -289,11 +338,14 @@ class _VoterDetailsState extends State<VoterDetails> {
                   },
                   itemBuilder: (context, voterData) {
                     return ListTile(
-                      title: Text(voterData['name']),
+                      title: Text(
+                          "${voterData['last_name']}, ${voterData['first_name']} ${voterData['middle_name']}"),
                     );
                   },
                   onSelected: (voterData) {
-                    referal.text = voterData['name'];
+                    referal.text =
+                        "${voterData['last_name']}, ${voterData['first_name']} ${voterData['middle_name']}";
+                    referalId = "${voterData['person_id']}";
                   },
                 ),
                 addPadding(3),
@@ -303,13 +355,8 @@ class _VoterDetailsState extends State<VoterDetails> {
                     TypeAheadField(
                       controller: referalTag,
                       suggestionsCallback: (pattern) async {
-                        List<Map<String, dynamic>> list = [
-                          {"tag": "Barkada", "id": "Voter"},
-                          {"tag": "Kapatid", "id": "Voter"},
-                          {"tag": "Tito", "id": "Voter"},
-                          {"tag": "Katrabaho", "id": "Voter"},
-                        ];
-                        return list
+                        List tags = await TagsModel().getAllTags();
+                        return tags
                             .where((suggestion) => suggestion["tag"]
                                 .toLowerCase()
                                 .contains(pattern.toLowerCase()))
@@ -330,6 +377,7 @@ class _VoterDetailsState extends State<VoterDetails> {
                       },
                       onSelected: (voterData) {
                         referalTag.text = voterData['tag'];
+                        referalTagId = "${voterData['id']}";
                       },
                     ),
                     addElevatedTextButton(
@@ -340,7 +388,36 @@ class _VoterDetailsState extends State<VoterDetails> {
                       fontWeight: FontWeight.bold,
                       bgColor: Colors.blueAccent,
                       borderRadius: 5,
-                      handleOnPress: () {},
+                      handleOnPress: () async {
+                        if ((referalId != '' && referal.text != "") &&
+                            (referalTagId != '' && referalTag.text != "")) {
+                          await PersonModel().insertRefferal(
+                              refferalList: [
+                                {'id': referalId, 'tag': referalTagId}
+                              ],
+                              person_id: widget.voterData['person_id'],
+                              type: "reffered_to").then((value) async {
+                            if (value['status'] == 'success') {
+                              LogsModel model = LogsModel(
+                                logText:
+                                    'Reffered by and reffered to has been added to the person with ID: ${widget.voterData['person_id']}',
+                                logType: 'Refferal',
+                              );
+                              await model.createLog();
+                              referal.clear();
+                              referalTag.clear();
+                              referalId = '';
+                              referalTagId = '';
+                              Get.snackbar("Success", "Refferal Added");
+                            } else {
+                              Get.snackbar("Error", "Refferal not Added");
+                            }
+                          });
+                        } else {
+                          Get.snackbar(
+                              "Error", "Please select a tag and a person");
+                        }
+                      },
                     ),
                   ],
                 ),

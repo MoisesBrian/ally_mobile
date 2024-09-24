@@ -26,9 +26,12 @@ class _LoginState extends State<Login> {
     super.initState();
     final supabase = Supabase.instance.client;
     supabase.auth.onAuthStateChange.listen((event) async {
-      // print("Auth event: ${event.event}");
+      print("Auth event: ${event.event}");
       //get user role
       if (event.event == AuthChangeEvent.signedIn) {
+        // if(event.session?.user == null){
+        //   return;
+        // }
         try {
           isLoading = true;
           User? user = event.session?.user;
