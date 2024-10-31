@@ -53,12 +53,23 @@ class _HomeState extends State<Home> {
         context: context);
     return SafeArea(
       child: Scaffold(
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            // Get.to(
+            //     () => VoterDetails(
+            //           voterData: {},
+            //         ),
+            //     transition: Transition.cupertino,
+            //     duration: const Duration(milliseconds: 250));
+          },
+          child: const Icon(Icons.add),
+        ),
         appBar: AppBar(
           actions: [
             IconButton(
               icon: const Icon(Icons.logout_rounded),
-              onPressed: () {
-                Supabase.instance.client.auth.signOut();
+              onPressed: () async {
+                await Supabase.instance.client.auth.signOut();
                 Get.off(() => const Login(),
                     transition: Transition.fade,
                     duration: const Duration(milliseconds: 250));

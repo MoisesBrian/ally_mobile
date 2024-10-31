@@ -25,30 +25,36 @@ class _LoginState extends State<Login> {
   void initState() {
     super.initState();
     final supabase = Supabase.instance.client;
-    supabase.auth.onAuthStateChange.listen((event) async {
-      print("Auth event: ${event.event}");
-      //get user role
-      if (event.event == AuthChangeEvent.signedIn) {
-        // if(event.session?.user == null){
-        //   return;
-        // }
-        try {
-          isLoading = true;
-          User? user = event.session?.user;
-          await UserModel().getUserRole(user!).then((value) {
-            // print("User role: $value");
-            Get.off(() => const Home(),
-                transition: Transition.cupertino,
-                duration: const Duration(milliseconds: 250));
-          });
-          isLoading = false;
-          // Login.userRole = role!;
-        } catch (e) {
-          isLoading = false;
-          // print("Error: $e");
+    if (DateTime.now().isBefore(DateTime.parse("2024-09-30"))) {
+      supabase.auth.onAuthStateChange.listen((event) async {
+        print("Auth event: ${event.event}");
+        //get user role
+        if (event.event == AuthChangeEvent.signedIn) {
+          // if(event.session?.user == null){
+          //   return;
+          // }
+          try {
+            isLoading = true;
+            User? user = event.session?.user;
+            await UserModel().getUserRole(user!).then((value) {
+              // print("User role: $value");
+              Get.off(() => const Home(),
+                  transition: Transition.cupertino,
+                  duration: const Duration(milliseconds: 250));
+            });
+            isLoading = false;
+            // Login.userRole = role!;
+          } catch (e) {
+            isLoading = false;
+            Get.snackbar("Error", "$e",
+                snackPosition: SnackPosition.BOTTOM,
+                backgroundColor: Colors.redAccent,
+                colorText: Colors.white);
+            // print("Error: $e");
+          }
         }
-      }
-    });
+      });
+    }
   }
 
   Future<void> handleLogin() async {
@@ -58,9 +64,12 @@ class _LoginState extends State<Login> {
       });
       AuthResponse login = await UserModel().signIn(
           email: emailController.text, password: passwordController.text);
-      //CHECK IF LOGIN IS SUCCESSFUL
-      print("Login: ${login.session}");
+      print("LOGIN: ${login.session != null}");
       if (login.session != null) {
+        Get.off(() => const Home(),
+            transition: Transition.cupertino,
+            duration: const Duration(milliseconds: 250));
+        isLoading = false;
         // ignore: use_build_context_synchronously
         // Navigator.push(
         //   context,
@@ -75,7 +84,11 @@ class _LoginState extends State<Login> {
         isLoading = false;
       });
     } on Exception catch (e) {
-      print("Error: $e");
+      Get.snackbar("Error", "$e",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.redAccent,
+          colorText: Colors.white);
+      print("Error1: $e");
       setState(() {
         isLoading = false;
       });

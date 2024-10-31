@@ -66,12 +66,12 @@ class _VoterDetailsState extends State<VoterDetails> {
   // }
 
   void updateControllers() {
-    firstName.text = widget.voterData['first_name'];
-    middleName.text = widget.voterData['middle_name'];
-    lastName.text = widget.voterData['last_name'];
-    precinctNo.text = widget.voterData['precint_no'];
-    birthDate.text = widget.voterData['birth_date'];
-    contactNo.text = widget.voterData['contact_no'];
+    firstName.text = widget.voterData['first_name'] ?? "";
+    middleName.text = widget.voterData['middle_name'] ?? "";
+    lastName.text = widget.voterData['last_name'] ?? "";
+    precinctNo.text = widget.voterData['precint_no'] ?? "";
+    birthDate.text = widget.voterData['birth_date'] ?? "";
+    contactNo.text = widget.voterData['contact_no'] ?? "";
     if (municipalityList.contains("${widget.voterData['municipality']}")) {
       selectedMunicipality = widget.voterData['municipality'];
     }
@@ -140,7 +140,35 @@ class _VoterDetailsState extends State<VoterDetails> {
           padding: const EdgeInsets.fromLTRB(15, 0, 15, 15),
           child: SingleChildScrollView(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                addPadding(5),
+                RichText(
+                  text: TextSpan(
+                    text: firstName.text,
+                    style: TextStyle(
+                      color: Colors.redAccent,
+                      fontSize: titleFontSize - 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    children: <TextSpan>[
+                      TextSpan(
+                        text: ' ${middleName.text[0]}. ${lastName.text}',
+                        style: TextStyle(
+                          color: Colors.blue,
+                          fontSize: titleFontSize - 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // addLabel(
+                //     text:
+                //         "${firstName.text} ${middleName.text[0]}. ${lastName.text}",
+                //     fontSize: titleFontSize - 10,
+                //     fontWeight: FontWeight.w600,
+                //     fontColor: Colors.black87),
                 addPadding(5),
                 TypeAheadField(
                   controller: referedBy,

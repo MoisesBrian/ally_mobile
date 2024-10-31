@@ -13,7 +13,6 @@ void main() async {
     url: '${dotenv.env['URL']}',
     anonKey: '${dotenv.env['KEY']}',
   );
-  
   runApp(
     GetMaterialApp(
       debugShowCheckedModeBanner: false,
